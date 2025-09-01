@@ -1,0 +1,260 @@
+rabbitmq:
+  host: "localhost"
+  port: 5672
+  username: "guest"
+  password: "guest"
+  queue_name: "iso_downloads"
+
+download:
+  max_parallel: 3
+  download_directory: "./downloads"
+  chunk_size: 8192
+  timeout: 300
+
+scheduler:
+  frequency: "weekly"  # weekly, monthly, daily
+  time: "02:00"       # 24-hour format
+
+isos:
+  - name: "Ubuntu 24.04 LTS"
+    url: "https://releases.ubuntu.com/24.04/ubuntu-24.04-desktop-amd64.iso"
+    type: "http"
+    enabled: true
+    discovered: false
+    destination_dir: "./downloads/ubuntu"
+    
+  - name: "Fedora 40 Workstation"
+    url: "https://download.fedoraproject.org/pub/fedora/linux/releases/40/Workstation/x86_64/iso/Fedora-Workstation-Live-x86_64-40-1.14.iso"
+    type: "http" 
+    enabled: true
+    discovered: false
+    destination_dir: "./downloads/fedora"
+
+iso_globs:
+  # BSD Systems
+  - name: "FreeBSD Archive"
+    base_url: "rsync://ftp-archive.freebsd.org/FreeBSD-Archive/old-releases/"
+    type: "rsync"
+    enabled: false
+    include_patterns:
+      - "*.iso"
+      - "*.img"
+    recursive: true
+    max_depth: 4
+    destination_dir: "./downloads/freebsd"
+    
+  - name: "NetBSD Archive"
+    base_url: "https://archive.netbsd.org/pub/NetBSD-archive/iso/"
+    type: "http"
+    enabled: false
+    include_patterns:
+      - "*.iso"
+    recursive: true
+    max_depth: 3
+    destination_dir: "./downloads/netbsd"
+    
+  - name: "NetBSD Current"
+    base_url: "http://cdn.netbsd.org/pub/NetBSD/iso/"
+    type: "http" 
+    enabled: false
+    include_patterns:
+      - "*.iso"
+    recursive: true
+    max_depth: 3
+    destination_dir: "./downloads/netbsd"
+    
+  - name: "OpenBSD Archive"
+    base_url: "rsync://mirror.planetunix.net/OpenBSD-archive/"
+    type: "rsync"
+    enabled: false
+    include_patterns:
+      - "*.iso"
+      - "*.img"
+    exclude_patterns:
+      - "packages*"
+    recursive: true
+    max_depth: 3
+    destination_dir: "./downloads/openbsd"
+
+  # Linux Distributions
+  - name: "Debian Archive"
+    base_url: "rsync://cdimage.debian.org/cdimage/archive/"
+    type: "rsync"
+    enabled: false
+    include_patterns:
+      - "*.iso"
+    recursive: true
+    max_depth: 4
+    destination_dir: "./downloads/debian"
+    
+  - name: "Gentoo Releases"
+    base_url: "rsync://ftp.swin.edu.au/gentoo/releases/x86/"
+    type: "rsync"
+    enabled: false
+    include_patterns:
+      - "*.iso"
+    recursive: true
+    max_depth: 3
+    destination_dir: "./downloads/gentoo"
+    
+  - name: "XCP-ng"
+    base_url: "https://updates.xcp-ng.org/isos/"
+    type: "http"
+    enabled: false
+    include_patterns:
+      - "*.iso"
+    recursive: true
+    max_depth: 2
+    destination_dir: "./downloads/xcp-ng"
+    
+  - name: "Kali Linux"
+    base_url: "http://old.kali.org/kali-images/"
+    type: "http"
+    enabled: false
+    include_patterns:
+      - "*.iso"
+    exclude_patterns:
+      - "*html*"
+    recursive: true
+    max_depth: 3
+    destination_dir: "./downloads/kali"
+    
+  - name: "CentOS Vault"
+    base_url: "rsync://linuxsoft.cern.ch/centos-vault/"
+    type: "rsync"
+    enabled: false
+    include_patterns:
+      - "*.iso"
+    recursive: true
+    max_depth: 4
+    destination_dir: "./downloads/centos"
+    
+  - name: "Fedora Archive"
+    base_url: "rsync://archives.fedoraproject.org/fedora-archive/fedora/linux/releases/"
+    type: "rsync"
+    enabled: false
+    include_patterns:
+      - "*.iso"
+    recursive: true
+    max_depth: 4
+    destination_dir: "./downloads/fedora"
+    
+  - name: "Slackware"
+    base_url: "rsync://slackware.absolutehosting.net/pub/slackware/"
+    type: "rsync"
+    enabled: false
+    include_patterns:
+      - "*.iso"
+    recursive: true
+    max_depth: 3
+    destination_dir: "./downloads/slackware"
+    
+  - name: "Arch Linux Archive"
+    base_url: "https://archive.archlinux.org/iso/"
+    type: "http"
+    enabled: false
+    include_patterns:
+      - "*.iso"
+    exclude_patterns:
+      - "*html*"
+    recursive: true
+    max_depth: 3
+    destination_dir: "./downloads/archlinux"
+    
+  - name: "Alpine Linux"
+    base_url: "http://ewr.edge.kernel.org/alpine/"
+    type: "http"
+    enabled: false
+    include_patterns:
+      - "*.iso"
+    exclude_patterns:
+      - "*html*"
+    recursive: true
+    max_depth: 3
+    destination_dir: "./downloads/alpine"
+    
+  - name: "Knoppix"
+    base_url: "rsync://ftp.nluug.nl/knoppix-cd/"
+    type: "rsync"
+    enabled: false
+    include_patterns:
+      - "*.iso"
+    recursive: true
+    max_depth: 3
+    destination_dir: "./downloads/knoppix"
+    
+  - name: "Ubuntu Old Releases"
+    base_url: "rsync://old-releases.ubuntu.com/old-releases/releases/"
+    type: "rsync"
+    enabled: false
+    include_patterns:
+      - "*.iso"
+    recursive: true
+    max_depth: 4
+    destination_dir: "./downloads/ubuntu"
+    
+  - name: "openSUSE"
+    base_url: "rsync://ftp.nluug.nl/opensuse/"
+    type: "rsync"
+    enabled: false
+    include_patterns:
+      - "*.iso"
+    recursive: true
+    max_depth: 4
+    destination_dir: "./downloads/opensuse"
+    
+  - name: "Linux Mint"
+    base_url: "rsync://ftp.nluug.nl/linuxmint/iso/stable/"
+    type: "rsync"
+    enabled: false
+    include_patterns:
+      - "*.iso"
+    recursive: true
+    max_depth: 3
+    destination_dir: "./downloads/linuxmint"
+
+  # Software/Kernels  
+  - name: "OpenSSL Source"
+    base_url: "http://artfiles.org/openssl.org/source/old/"
+    type: "http"
+    enabled: false
+    include_patterns:
+      - "*.tar.gz"
+      - "*.tgz"
+    recursive: true
+    max_depth: 2
+    destination_dir: "./downloads/openssl"
+    
+  - name: "Linux Kernel"
+    base_url: "rsync://rsync.kernel.org/pub/linux/kernel/"
+    type: "rsync"
+    enabled: false
+    include_patterns:
+      - "*.tar.gz"
+      - "*.tar.xz"
+    recursive: true
+    max_depth: 3
+    destination_dir: "./downloads/kernel"
+
+  # Current/Active (kept from original)
+  - name: "Debian ISOs"
+    base_url: "https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/"
+    type: "http"
+    enabled: true
+    include_patterns:
+      - "*.iso"
+    exclude_patterns:
+      - "*edu*"
+      - "*mac*"
+    recursive: false
+    destination_dir: "./downloads/debian"
+    
+  - name: "CentOS Stream"
+    base_url: "https://mirror.stream.centos.org/9-stream/BaseOS/x86_64/iso/"
+    type: "http"
+    enabled: true
+    include_patterns:
+      - "*dvd*.iso"
+      - "*boot*.iso"
+    recursive: false
+    destination_dir: "./downloads/centos"
