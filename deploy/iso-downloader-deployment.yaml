@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iso-downloader-scheduler
+  labels:
+    app: iso-downloader
+    component: scheduler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: iso-downloader
+      component: scheduler
+  template:
+    metadata:
+      labels:
+        app: iso-downloader
+        component: scheduler
+    spec:
+      containers:
+      - name: iso-downloader
+        image: iso-downloader:latest
+        command: ["python", "main.py", "start-scheduler"]
+        env:
+        - name: PYTHONPATH
+          value: "/app"
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        volumeMounts:
+        - name: downloads
+          mountPath: /downloads
+        - name: config
+          mountPath: /app/config.yaml
+          subPath: config.yaml
+      volumes:
+      - name: downloads
+        persistentVolumeClaim:
+          claimName: iso-downloads-pvc
+      - name: config
+        configMap:
+          name: iso-downloader-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iso-downloader-worker
+  labels:
+    app: iso-downloader
+    component: worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: iso-downloader
+      component: worker
+  template:
+    metadata:
+      labels:
+        app: iso-downloader
+        component: worker
+    spec:
+      containers:
+      - name: iso-downloader
+        image: iso-downloader:latest
+        command: ["python", "main.py", "start-worker"]
+        env:
+        - name: PYTHONPATH
+          value: "/app"
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        volumeMounts:
+        - name: downloads
+          mountPath: /downloads
+        - name: config
+          mountPath: /app/config.yaml
+          subPath: config.yaml
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+      - name: downloads
+        persistentVolumeClaim:
+          claimName: iso-downloads-pvc
+      - name: config
+        configMap:
+          name: iso-downloader-config
