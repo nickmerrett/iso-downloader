@@ -15,21 +15,6 @@ scheduler:
   frequency: "weekly"  # weekly, monthly, daily
   time: "02:00"       # 24-hour format
 
-isos:
-  - name: "Ubuntu 24.04 LTS"
-    url: "https://releases.ubuntu.com/24.04/ubuntu-24.04-desktop-amd64.iso"
-    type: "http"
-    enabled: true
-    discovered: false
-    destination_dir: "./downloads/ubuntu"
-
-  - name: "Fedora 40 Workstation"
-    url: "https://download.fedoraproject.org/pub/fedora/linux/releases/40/Workstation/x86_64/iso/Fedora-Workstation-Live-x86_64-40-1.14.iso"
-    type: "http"
-    enabled: true
-    discovered: false
-    destination_dir: "./downloads/fedora"
-
 iso_globs:
   # BSD Systems
   - name: "FreeBSD Archive"
@@ -40,7 +25,7 @@ iso_globs:
     include_patterns:
       - "*.iso"
       - "*.img"
-    destination_dir: "./downloads/freebsd"
+    destination_dir: "/isos/freebsd"
 
   - name: "NetBSD Archive"
     base_url: "https://archive.netbsd.org/pub/NetBSD-archive/iso/"
@@ -49,7 +34,7 @@ iso_globs:
     enabled: false
     include_patterns:
       - "*.iso"
-    destination_dir: "./downloads/netbsd"
+    destination_dir: "/isos/netbsd"
 
   - name: "NetBSD Current"
     base_url: "http://cdn.netbsd.org/pub/NetBSD/iso/"
@@ -58,7 +43,7 @@ iso_globs:
     enabled: false
     include_patterns:
       - "*.iso"
-    destination_dir: "./downloads/netbsd"
+    destination_dir: "/isos/netbsd"
 
   - name: "OpenBSD Archive"
     base_url: "rsync://mirror.planetunix.net/OpenBSD-archive/"
@@ -70,7 +55,7 @@ iso_globs:
       - "*.img"
     exclude_patterns:
       - "packages*"
-    destination_dir: "./downloads/openbsd"
+    destination_dir: "/isos/openbsd"
 
   # Linux Distributions
   - name: "Debian Archive"
@@ -80,7 +65,7 @@ iso_globs:
     enabled: false
     include_patterns:
       - "*.iso"
-    destination_dir: "./downloads/debian"
+    destination_dir: "/isos/debian"
 
   - name: "Gentoo Releases"
     base_url: "rsync://ftp.swin.edu.au/gentoo/releases/x86/"
@@ -89,7 +74,7 @@ iso_globs:
     enabled: false
     include_patterns:
       - "*.iso"
-    destination_dir: "./downloads/gentoo"
+    destination_dir: "/isos/gentoo"
 
   - name: "XCP-ng"
     base_url: "https://updates.xcp-ng.org/isos/"
@@ -98,7 +83,7 @@ iso_globs:
     enabled: false
     include_patterns:
       - "*.iso"
-    destination_dir: "./downloads/xcp-ng"
+    destination_dir: "/isos/xcp-ng"
 
   - name: "Kali Linux"
     base_url: "http://old.kali.org/kali-images/"
@@ -109,7 +94,7 @@ iso_globs:
       - "*.iso"
     exclude_patterns:
       - "*html*"
-    destination_dir: "./downloads/kali"
+    destination_dir: "/isos/kali"
 
   - name: "CentOS Vault"
     base_url: "rsync://linuxsoft.cern.ch/centos-vault/"
@@ -118,7 +103,7 @@ iso_globs:
     enabled: false
     include_patterns:
       - "*.iso"
-    destination_dir: "./downloads/centos"
+    destination_dir: "/isos/centos"
 
   - name: "Fedora Archive"
     base_url: "rsync://archives.fedoraproject.org/fedora-archive/fedora/linux/releases/"
@@ -127,7 +112,7 @@ iso_globs:
     enabled: false
     include_patterns:
       - "*.iso"
-    destination_dir: "./downloads/fedora"
+    destination_dir: "/isos/fedora"
 
   - name: "Slackware"
     base_url: "rsync://slackware.absolutehosting.net/pub/slackware/"
@@ -136,7 +121,7 @@ iso_globs:
     enabled: false
     include_patterns:
       - "*.iso"
-    destination_dir: "./downloads/slackware"
+    destination_dir: "/isos/slackware"
 
   - name: "Arch Linux Archive"
     base_url: "https://archive.archlinux.org/iso/"
@@ -147,10 +132,10 @@ iso_globs:
       - "*.iso"
     exclude_patterns:
       - "*html*"
-    destination_dir: "./downloads/archlinux"
+    destination_dir: "/isos/archlinux"
 
   - name: "Alpine Linux"
-    base_url: "http://ewr.edge.kernel.org/alpine/"
+    base_url: "http://dl-cdn.alpinelinux.org/alpine/"
     type: "http"
     mirror: true
     enabled: false
@@ -158,7 +143,7 @@ iso_globs:
       - "*.iso"
     exclude_patterns:
       - "*html*"
-    destination_dir: "./downloads/alpine"
+    destination_dir: "/isos/alpine"
 
   - name: "Knoppix"
     base_url: "rsync://ftp.nluug.nl/knoppix-cd/"
@@ -167,7 +152,7 @@ iso_globs:
     enabled: false
     include_patterns:
       - "*.iso"
-    destination_dir: "./downloads/knoppix"
+    destination_dir: "/isos/knoppix"
 
   - name: "Ubuntu Old Releases"
     base_url: "rsync://old-releases.ubuntu.com/old-releases/releases/"
@@ -176,7 +161,7 @@ iso_globs:
     enabled: false
     include_patterns:
       - "*.iso"
-    destination_dir: "./downloads/ubuntu"
+    destination_dir: "/isos/ubuntu"
 
   - name: "openSUSE"
     base_url: "rsync://ftp.nluug.nl/opensuse/"
@@ -185,7 +170,7 @@ iso_globs:
     enabled: false
     include_patterns:
       - "*.iso"
-    destination_dir: "./downloads/opensuse"
+    destination_dir: "/isos/opensuse"
 
   - name: "Linux Mint"
     base_url: "rsync://ftp.nluug.nl/linuxmint/iso/stable/"
@@ -194,7 +179,7 @@ iso_globs:
     enabled: false
     include_patterns:
       - "*.iso"
-    destination_dir: "./downloads/linuxmint"
+    destination_dir: "/isos/linuxmint"
 
   # Software/Kernels
   - name: "OpenSSL Source"
@@ -205,7 +190,7 @@ iso_globs:
     include_patterns:
       - "*.tar.gz"
       - "*.tgz"
-    destination_dir: "./downloads/openssl"
+    destination_dir: "/isos/openssl"
 
   - name: "Linux Kernel"
     base_url: "rsync://rsync.kernel.org/pub/linux/kernel/"
@@ -215,7 +200,7 @@ iso_globs:
     include_patterns:
       - "*.tar.gz"
       - "*.tar.xz"
-    destination_dir: "./downloads/kernel"
+    destination_dir: "/isos/kernel"
 
   # Current/Active — flat directories, no subdirs to mirror
   - name: "Debian ISOs"
@@ -228,7 +213,7 @@ iso_globs:
       - "*edu*"
       - "*mac*"
     recursive: false
-    destination_dir: "./downloads/debian"
+    destination_dir: "/isos/debian"
 
   - name: "CentOS Stream"
     base_url: "https://mirror.stream.centos.org/9-stream/BaseOS/x86_64/iso/"
@@ -238,4 +223,4 @@ iso_globs:
       - "*dvd*.iso"
       - "*boot*.iso"
     recursive: false
-    destination_dir: "./downloads/centos"
+    destination_dir: "/isos/centos"
