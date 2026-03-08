@@ -167,18 +167,16 @@ class RsyncDownloader:
                 "filepath": str(filepath)
             }
 
-    async def mirror(self, url: str, name: str, destination_dir: Optional[str] = None) -> Dict[str, Any]:
-        """Mirror an entire remote rsync directory to a local subdirectory."""
-        download_dir = Path(destination_dir) if destination_dir else self.default_download_dir
-        local_dir = download_dir / name
+    async def mirror(self, url: str, destination_dir: Optional[str] = None) -> Dict[str, Any]:
+        """Mirror an entire remote rsync directory into destination_dir."""
+        local_dir = Path(destination_dir) if destination_dir else self.default_download_dir
         local_dir.mkdir(parents=True, exist_ok=True)
 
         start_time = datetime.now()
 
         try:
-            logger.info(f"Starting rsync mirror: {name} -> {local_dir}")
+            logger.info(f"Starting rsync mirror: {url} -> {local_dir}")
 
-            # Trailing slash on source syncs directory contents into local_dir
             cmd = ['rsync', '-avP', '--recursive', url, str(local_dir) + '/']
 
             process = await asyncio.create_subprocess_exec(
@@ -195,7 +193,7 @@ class RsyncDownloader:
                 size_bytes = sum(f.stat().st_size for f in local_dir.rglob('*') if f.is_file())
                 speed_mbps = (size_bytes / (1024 * 1024)) / duration if duration > 0 else 0
 
-                logger.info(f"Rsync mirror completed: {name} ({speed_mbps:.2f} MB/s)")
+                logger.info(f"Rsync mirror completed: {url} ({speed_mbps:.2f} MB/s)")
 
                 return {
                     "success": True,
@@ -206,11 +204,11 @@ class RsyncDownloader:
                 }
             else:
                 error_msg = stderr.decode().strip()
-                logger.error(f"Rsync mirror failed for {name}: {error_msg}")
+                logger.error(f"Rsync mirror failed for {url}: {error_msg}")
                 return {"success": False, "error": error_msg, "filepath": str(local_dir)}
 
         except Exception as e:
-            logger.error(f"Rsync mirror failed for {name}: {e}")
+            logger.error(f"Rsync mirror failed for {url}: {e}")
             return {"success": False, "error": str(e), "filepath": str(local_dir)}
 
 
@@ -218,21 +216,19 @@ class RcloneDownloader:
     def __init__(self, download_dir: str):
         self.default_download_dir = Path(download_dir)
 
-    async def mirror(self, url: str, name: str, destination_dir: Optional[str] = None) -> Dict[str, Any]:
-        """Mirror an HTTP directory tree using rclone copy."""
-        download_dir = Path(destination_dir) if destination_dir else self.default_download_dir
-        local_dir = download_dir / name
+    async def mirror(self, url: str, destination_dir: Optional[str] = None) -> Dict[str, Any]:
+        """Mirror an HTTP directory tree into destination_dir using rclone."""
+        local_dir = Path(destination_dir) if destination_dir else self.default_download_dir
         local_dir.mkdir(parents=True, exist_ok=True)
 
         start_time = datetime.now()
 
-        # rclone HTTP backend needs the base URL and path split apart
         parsed = urlparse(url)
         base_url = f"{parsed.scheme}://{parsed.netloc}"
         path = parsed.path
 
         try:
-            logger.info(f"Starting rclone mirror: {name} -> {local_dir}")
+            logger.info(f"Starting rclone mirror: {url} -> {local_dir}")
 
             cmd = [
                 'rclone', 'copy',
@@ -256,7 +252,7 @@ class RcloneDownloader:
                 size_bytes = sum(f.stat().st_size for f in local_dir.rglob('*') if f.is_file())
                 speed_mbps = (size_bytes / (1024 * 1024)) / duration if duration > 0 else 0
 
-                logger.info(f"Rclone mirror completed: {name} ({speed_mbps:.2f} MB/s)")
+                logger.info(f"Rclone mirror completed: {url} ({speed_mbps:.2f} MB/s)")
 
                 return {
                     "success": True,
@@ -267,11 +263,11 @@ class RcloneDownloader:
                 }
             else:
                 error_msg = stderr.decode().strip()
-                logger.error(f"Rclone mirror failed for {name}: {error_msg}")
+                logger.error(f"Rclone mirror failed for {url}: {error_msg}")
                 return {"success": False, "error": error_msg, "filepath": str(local_dir)}
 
         except Exception as e:
-            logger.error(f"Rclone mirror failed for {name}: {e}")
+            logger.error(f"Rclone mirror failed for {url}: {e}")
             return {"success": False, "error": str(e), "filepath": str(local_dir)}
 
 
@@ -304,9 +300,9 @@ class DownloadManager:
                 elif job["type"] == "rsync":
                     result = await self.rsync_downloader.download(job["url"], None, destination_dir)
                 elif job["type"] == "rsync_mirror":
-                    result = await self.rsync_downloader.mirror(job["url"], job["name"], destination_dir)
+                    result = await self.rsync_downloader.mirror(job["url"], destination_dir)
                 elif job["type"] == "http_mirror":
-                    result = await self.rclone_downloader.mirror(job["url"], job["name"], destination_dir)
+                    result = await self.rclone_downloader.mirror(job["url"], destination_dir)
                 else:
                     result = {
                         "success": False,

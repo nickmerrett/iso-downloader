@@ -50,25 +50,35 @@ class DownloadWorker:
     
     def start_worker(self):
         logger.info("Starting ISO download worker...")
-        
-        # Setup signal handlers
+
         signal.signal(signal.SIGINT, self.signal_handler)
         signal.signal(signal.SIGTERM, self.signal_handler)
-        
+
         self.running = True
-        
+
         def sync_callback(message: Dict[str, Any]):
             asyncio.run(self.process_download_job(message))
-        
-        try:
-            self.queue_manager.start_consumer(sync_callback)
-        except KeyboardInterrupt:
-            logger.info("Received keyboard interrupt")
-        except Exception as e:
-            logger.error(f"Worker error: {e}")
-        finally:
-            self.queue_manager.disconnect()
-            logger.info("Worker stopped")
+
+        while self.running:
+            try:
+                self.queue_manager.connect()
+                logger.info("Worker connected, waiting for jobs...")
+                self.queue_manager.start_consumer(sync_callback)
+            except KeyboardInterrupt:
+                logger.info("Received keyboard interrupt")
+                self.running = False
+            except Exception as e:
+                if self.running:
+                    logger.error(f"Worker connection lost: {e} — reconnecting in 5s")
+                    import time
+                    time.sleep(5)
+            finally:
+                try:
+                    self.queue_manager.disconnect()
+                except Exception:
+                    pass
+
+        logger.info("Worker stopped")
 
 
 if __name__ == "__main__":

@@ -22,7 +22,9 @@ class QueueManager:
         parameters = pika.ConnectionParameters(
             host=self.config.host,
             port=self.config.port,
-            credentials=credentials
+            credentials=credentials,
+            heartbeat=600,
+            blocked_connection_timeout=300
         )
         
         try:
