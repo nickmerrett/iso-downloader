@@ -300,9 +300,9 @@ class DownloadManager:
                 destination_dir = job.get("destination_dir")
 
                 if job["type"] == "http":
-                    result = await self.http_downloader.download(job["url"], job["name"], destination_dir)
+                    result = await self.http_downloader.download(job["url"], None, destination_dir)
                 elif job["type"] == "rsync":
-                    result = await self.rsync_downloader.download(job["url"], job["name"], destination_dir)
+                    result = await self.rsync_downloader.download(job["url"], None, destination_dir)
                 elif job["type"] == "rsync_mirror":
                     result = await self.rsync_downloader.mirror(job["url"], job["name"], destination_dir)
                 elif job["type"] == "http_mirror":

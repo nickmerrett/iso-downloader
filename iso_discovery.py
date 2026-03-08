@@ -150,7 +150,18 @@ class ISODiscoverer:
                     "discovered": True
                 })
 
-            logger.info(f"Discovered {len(discovered)} new remote directories from {base_url}")
+            if not discovered:
+                # Flat directory — no subdirs found, mirror the base URL itself
+                logger.info(f"No subdirectories found at {base_url}, creating single mirror job")
+                name = base_url.rstrip('/').split('/')[-1]
+                discovered.append({
+                    "name": name,
+                    "url": base_url,
+                    "type": "http_mirror",
+                    "discovered": True
+                })
+            else:
+                logger.info(f"Discovered {len(discovered)} new remote directories from {base_url}")
 
         except Exception as e:
             logger.error(f"Error discovering HTTP directories from {base_url}: {e}")
@@ -211,7 +222,18 @@ class ISODiscoverer:
                     "discovered": True
                 })
 
-            logger.info(f"Discovered {len(discovered)} new remote directories from {base_url}")
+            if not discovered:
+                # Flat directory — no subdirs found, mirror the base URL itself
+                logger.info(f"No subdirectories found at {base_url}, creating single mirror job")
+                name = base_url.rstrip('/').split('/')[-1]
+                discovered.append({
+                    "name": name,
+                    "url": base_url,
+                    "type": "rsync_mirror",
+                    "discovered": True
+                })
+            else:
+                logger.info(f"Discovered {len(discovered)} new remote directories from {base_url}")
 
         except Exception as e:
             logger.error(f"Error discovering rsync directories from {base_url}: {e}")
