@@ -132,8 +132,6 @@ class ISODiscoverer:
                     continue
                 seen.add(name)
 
-                if include_patterns and not any(fnmatch.fnmatch(name, p) for p in include_patterns):
-                    continue
                 if exclude_patterns and any(fnmatch.fnmatch(name, p) for p in exclude_patterns):
                     continue
 
@@ -201,11 +199,9 @@ class ISODiscoverer:
                 if len(parts) < 5:
                     continue
                 permissions, name = parts[0], parts[-1]
-                if not permissions.startswith('d') or name == '.':
+                if not permissions.startswith(('d', 'l')) or name == '.':
                     continue
 
-                if include_patterns and not any(fnmatch.fnmatch(name, p) for p in include_patterns):
-                    continue
                 if exclude_patterns and any(fnmatch.fnmatch(name, p) for p in exclude_patterns):
                     continue
 
