@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 class ISOConfig(BaseModel):
     name: str
     url: str
-    type: str = Field(..., pattern="^(http|rsync|glob)$")
+    type: str = Field(..., pattern="^(http|rsync|rsync_mirror|http_mirror|glob)$")
     enabled: bool = True
     discovered: bool = False
     destination_dir: Optional[str] = None
@@ -18,6 +18,7 @@ class ISOGlobConfig(BaseModel):
     base_url: str
     type: str = Field(..., pattern="^(http|rsync)$")
     enabled: bool = True
+    mirror: bool = False  # rsync only: mirror entire subdirectories not yet present locally
     include_patterns: Optional[List[str]] = None
     exclude_patterns: Optional[List[str]] = None
     recursive: bool = False
@@ -86,7 +87,23 @@ class ConfigManager:
         discoverer = ISODiscoverer()
         for glob_config in self.get_enabled_globs():
             try:
-                if glob_config.recursive:
+                if glob_config.mirror and glob_config.type == "rsync":
+                    local_base = Path(glob_config.destination_dir or self.config.download.download_directory)
+                    discovered = await discoverer.discover_rsync_directories(
+                        glob_config.base_url,
+                        local_base,
+                        include_patterns=glob_config.include_patterns,
+                        exclude_patterns=glob_config.exclude_patterns
+                    )
+                elif glob_config.mirror and glob_config.type == "http":
+                    local_base = Path(glob_config.destination_dir or self.config.download.download_directory)
+                    discovered = await discoverer.discover_http_directories(
+                        glob_config.base_url,
+                        local_base,
+                        include_patterns=glob_config.include_patterns,
+                        exclude_patterns=glob_config.exclude_patterns
+                    )
+                elif glob_config.recursive:
                     discovered = await discoverer.discover_recursive(
                         glob_config.base_url,
                         glob_config.type,
@@ -99,14 +116,14 @@ class ConfigManager:
                         glob_config.type,
                         glob_config.include_patterns
                     )
-                
-                # Apply filters
-                if glob_config.exclude_patterns:
+
+                # Apply filters (not applied to mirror jobs — we want everything in the dir)
+                if not glob_config.mirror and glob_config.exclude_patterns:
                     discovered = ISOFilter.filter_by_name_patterns(
                         discovered,
                         exclude_patterns=glob_config.exclude_patterns
                     )
-                
+
                 # Convert to ISOConfig objects
                 for disc_iso in discovered:
                     iso_config = ISOConfig(

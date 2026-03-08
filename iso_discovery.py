@@ -104,6 +104,120 @@ class ISODiscoverer:
         
         return unique_links
     
+    async def discover_http_directories(self, base_url: str, local_base: "Path",
+                                        include_patterns: List[str] = None,
+                                        exclude_patterns: List[str] = None) -> List[Dict[str, str]]:
+        """List subdirectories from an HTTP directory listing and return mirror jobs for those not present locally."""
+        from pathlib import Path as _Path
+        discovered = []
+
+        try:
+            async with aiohttp.ClientSession(timeout=self.timeout) as session:
+                logger.info(f"Discovering HTTP directories from: {base_url}")
+
+                async with session.get(base_url) as response:
+                    response.raise_for_status()
+                    html = await response.text()
+
+            # Match href links ending in / — these are directories in autoindex listings
+            raw_links = re.findall(r'href=["\']([^"\'?#]+/)["\']', html, re.IGNORECASE)
+
+            seen = set()
+            for link in raw_links:
+                # Skip parent dir, current dir, and absolute URLs
+                if link in ('../', './') or link.startswith(('http://', 'https://', '/')):
+                    continue
+                name = link.rstrip('/')
+                if not name or name in seen:
+                    continue
+                seen.add(name)
+
+                if include_patterns and not any(fnmatch.fnmatch(name, p) for p in include_patterns):
+                    continue
+                if exclude_patterns and any(fnmatch.fnmatch(name, p) for p in exclude_patterns):
+                    continue
+
+                local_dir = _Path(local_base) / name
+                if local_dir.exists():
+                    logger.debug(f"Skipping {name} — already exists locally at {local_dir}")
+                    continue
+
+                dir_url = base_url.rstrip('/') + '/' + name + '/'
+                discovered.append({
+                    "name": name,
+                    "url": dir_url,
+                    "type": "http_mirror",
+                    "discovered": True
+                })
+
+            logger.info(f"Discovered {len(discovered)} new remote directories from {base_url}")
+
+        except Exception as e:
+            logger.error(f"Error discovering HTTP directories from {base_url}: {e}")
+
+        return discovered
+
+    async def _rsync_list(self, url: str):
+        """Run rsync --list-only and return (returncode, stdout, stderr)."""
+        process = await asyncio.create_subprocess_exec(
+            'rsync', '--list-only', url,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await process.communicate()
+        return process.returncode, stdout.decode(), stderr.decode()
+
+    async def discover_rsync_directories(self, base_url: str, local_base: "Path",
+                                         include_patterns: List[str] = None,
+                                         exclude_patterns: List[str] = None) -> List[Dict[str, str]]:
+        """List subdirectories on a remote rsync source and return mirror jobs for those not present locally."""
+        from pathlib import Path as _Path
+        discovered = []
+
+        try:
+            logger.info(f"Discovering rsync directories from: {base_url}")
+            returncode, output, stderr = await self._rsync_list(base_url)
+
+            if returncode != 0:
+                logger.error(f"Rsync listing failed for {base_url}: {stderr.strip()}")
+                return discovered
+
+            for line in output.splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                parts = line.split()
+                if len(parts) < 5:
+                    continue
+                permissions, name = parts[0], parts[-1]
+                if not permissions.startswith('d') or name == '.':
+                    continue
+
+                if include_patterns and not any(fnmatch.fnmatch(name, p) for p in include_patterns):
+                    continue
+                if exclude_patterns and any(fnmatch.fnmatch(name, p) for p in exclude_patterns):
+                    continue
+
+                local_dir = _Path(local_base) / name
+                if local_dir.exists():
+                    logger.debug(f"Skipping {name} — already exists locally at {local_dir}")
+                    continue
+
+                dir_url = base_url.rstrip('/') + '/' + name + '/'
+                discovered.append({
+                    "name": name,
+                    "url": dir_url,
+                    "type": "rsync_mirror",
+                    "discovered": True
+                })
+
+            logger.info(f"Discovered {len(discovered)} new remote directories from {base_url}")
+
+        except Exception as e:
+            logger.error(f"Error discovering rsync directories from {base_url}: {e}")
+
+        return discovered
+
     async def _discover_rsync_isos(self, base_url: str, patterns: List[str]) -> List[Dict[str, str]]:
         """Discover ISOs from rsync directory listing"""
         discovered_isos = []
