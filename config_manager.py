@@ -1,7 +1,10 @@
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 import yaml
+import logging
 from pydantic import BaseModel, Field
+
+logger = logging.getLogger(__name__)
 
 
 class ISOConfig(BaseModel):
@@ -11,6 +14,7 @@ class ISOConfig(BaseModel):
     enabled: bool = True
     discovered: bool = False
     destination_dir: Optional[str] = None
+    exclude_patterns: Optional[List[str]] = None
 
 
 class ISOGlobConfig(BaseModel):
@@ -84,8 +88,13 @@ class ConfigManager:
         all_isos.extend(self.get_enabled_isos())
         
         # Resolve glob patterns
+        enabled_globs = self.get_enabled_globs()
+        logger.info(f"Processing {len(enabled_globs)} enabled sources")
+
         discoverer = ISODiscoverer()
-        for glob_config in self.get_enabled_globs():
+        for glob_config in enabled_globs:
+            logger.info(f"[{glob_config.name}] Checking {glob_config.type}://{glob_config.base_url.split('://')[-1]}"
+                        f" (mirror={glob_config.mirror})")
             try:
                 if glob_config.mirror and glob_config.type == "rsync":
                     local_base = Path(glob_config.destination_dir or self.config.download.download_directory)
@@ -124,6 +133,13 @@ class ConfigManager:
                         exclude_patterns=glob_config.exclude_patterns
                     )
 
+                if discovered:
+                    logger.info(f"[{glob_config.name}] Queuing {len(discovered)} jobs: "
+                                + ", ".join(d['name'] for d in discovered[:5])
+                                + (f" ... (+{len(discovered) - 5} more)" if len(discovered) > 5 else ""))
+                else:
+                    logger.info(f"[{glob_config.name}] Nothing new to queue")
+
                 # Convert to ISOConfig objects
                 for disc_iso in discovered:
                     iso_config = ISOConfig(
@@ -132,14 +148,13 @@ class ConfigManager:
                         type=disc_iso['type'],
                         enabled=True,
                         discovered=True,
-                        destination_dir=glob_config.destination_dir
+                        destination_dir=disc_iso.get('destination_dir') or glob_config.destination_dir,
+                        exclude_patterns=glob_config.exclude_patterns
                     )
                     all_isos.append(iso_config)
-                    
+
             except Exception as e:
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.error(f"Error resolving glob pattern {glob_config.name}: {e}")
+                logger.error(f"[{glob_config.name}] Failed: {e}")
         
         # Deduplicate by URL
         seen_urls = set()

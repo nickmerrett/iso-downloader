@@ -167,7 +167,8 @@ class RsyncDownloader:
                 "filepath": str(filepath)
             }
 
-    async def mirror(self, url: str, destination_dir: Optional[str] = None) -> Dict[str, Any]:
+    async def mirror(self, url: str, destination_dir: Optional[str] = None,
+                     exclude_patterns: Optional[list] = None) -> Dict[str, Any]:
         """Mirror an entire remote rsync directory into destination_dir."""
         local_dir = Path(destination_dir) if destination_dir else self.default_download_dir
         local_dir.mkdir(parents=True, exist_ok=True)
@@ -177,7 +178,10 @@ class RsyncDownloader:
         try:
             logger.info(f"Starting rsync mirror: {url} -> {local_dir}")
 
-            cmd = ['rsync', '-avP', '--recursive', url, str(local_dir) + '/']
+            cmd = ['rsync', '-avP', '--recursive']
+            for pattern in (exclude_patterns or []):
+                cmd += ['--exclude', pattern]
+            cmd += [url, str(local_dir) + '/']
 
             process = await asyncio.create_subprocess_exec(
                 *cmd,
@@ -216,7 +220,8 @@ class RcloneDownloader:
     def __init__(self, download_dir: str):
         self.default_download_dir = Path(download_dir)
 
-    async def mirror(self, url: str, destination_dir: Optional[str] = None) -> Dict[str, Any]:
+    async def mirror(self, url: str, destination_dir: Optional[str] = None,
+                     exclude_patterns: Optional[list] = None) -> Dict[str, Any]:
         """Mirror an HTTP directory tree into destination_dir using rclone."""
         local_dir = Path(destination_dir) if destination_dir else self.default_download_dir
         local_dir.mkdir(parents=True, exist_ok=True)
@@ -237,6 +242,8 @@ class RcloneDownloader:
                 '--http-url', base_url,
                 '-v'
             ]
+            for pattern in (exclude_patterns or []):
+                cmd += ['--exclude', pattern]
 
             process = await asyncio.create_subprocess_exec(
                 *cmd,
@@ -300,9 +307,9 @@ class DownloadManager:
                 elif job["type"] == "rsync":
                     result = await self.rsync_downloader.download(job["url"], None, destination_dir)
                 elif job["type"] == "rsync_mirror":
-                    result = await self.rsync_downloader.mirror(job["url"], destination_dir)
+                    result = await self.rsync_downloader.mirror(job["url"], destination_dir, job.get("exclude_patterns"))
                 elif job["type"] == "http_mirror":
-                    result = await self.rclone_downloader.mirror(job["url"], destination_dir)
+                    result = await self.rclone_downloader.mirror(job["url"], destination_dir, job.get("exclude_patterns"))
                 else:
                     result = {
                         "success": False,

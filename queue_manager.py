@@ -50,6 +50,7 @@ class QueueManager:
             "url": iso_config.url,
             "type": iso_config.type,
             "destination_dir": iso_config.destination_dir,
+            "exclude_patterns": iso_config.exclude_patterns or [],
             "timestamp": None
         }
         
@@ -65,13 +66,20 @@ class QueueManager:
         logger.info(f"Published download job for {iso_config.name}")
     
     async def publish_all_enabled_jobs(self, config_manager: ConfigManager) -> None:
-        # Resolve all ISOs including glob patterns
         all_isos = await config_manager.resolve_all_isos()
-        
+
+        published = 0
+        failed = 0
         for iso in all_isos:
-            self.publish_download_job(iso)
-        
-        logger.info(f"Published {len(all_isos)} download jobs to queue (including discovered ISOs)")
+            try:
+                self.publish_download_job(iso)
+                published += 1
+            except Exception as e:
+                logger.error(f"Failed to publish job for {iso.name}: {e}")
+                failed += 1
+
+        logger.info(f"Scheduling complete — {published} jobs queued, {failed} failed"
+                    + (f" ({len(config_manager.get_enabled_globs())} sources checked)" if config_manager.get_enabled_globs() else ""))
     
     def start_consumer(self, callback: Callable[[Dict[str, Any]], None]) -> None:
         if not self.channel:
