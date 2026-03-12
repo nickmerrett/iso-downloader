@@ -45,14 +45,20 @@ class DownloadConfig(BaseModel):
     timeout: int = 300
 
 
+class WorkerConfig(BaseModel):
+    concurrency: int = 2
+
+
 class SchedulerConfig(BaseModel):
     frequency: str = Field(..., pattern="^(daily|weekly|monthly)$")
     time: str = Field(..., pattern="^([01]?[0-9]|2[0-3]):[0-5][0-9]$")
+    resync_within_days: int = 90
 
 
 class AppConfig(BaseModel):
     rabbitmq: RabbitMQConfig
     download: DownloadConfig
+    worker: WorkerConfig = WorkerConfig()
     scheduler: SchedulerConfig
     isos: List[ISOConfig] = []
     iso_globs: List[ISOGlobConfig] = []
@@ -78,7 +84,7 @@ class ConfigManager:
     def get_enabled_globs(self) -> List[ISOGlobConfig]:
         return [glob for glob in self.config.iso_globs if glob.enabled]
     
-    async def resolve_all_isos(self) -> List[ISOConfig]:
+    async def resolve_all_isos(self, resync_within_days_override: Optional[int] = None) -> List[ISOConfig]:
         """Resolve both direct ISOs and glob patterns into a unified list"""
         from iso_discovery import ISODiscoverer, ISOFilter
         
@@ -96,13 +102,15 @@ class ConfigManager:
             logger.info(f"[{glob_config.name}] Checking {glob_config.type}://{glob_config.base_url.split('://')[-1]}"
                         f" (mirror={glob_config.mirror})")
             try:
+                resync_within_days = resync_within_days_override if resync_within_days_override is not None else self.config.scheduler.resync_within_days
                 if glob_config.mirror and glob_config.type == "rsync":
                     local_base = Path(glob_config.destination_dir or self.config.download.download_directory)
                     discovered = await discoverer.discover_rsync_directories(
                         glob_config.base_url,
                         local_base,
                         include_patterns=glob_config.include_patterns,
-                        exclude_patterns=glob_config.exclude_patterns
+                        exclude_patterns=glob_config.exclude_patterns,
+                        resync_within_days=resync_within_days
                     )
                 elif glob_config.mirror and glob_config.type == "http":
                     local_base = Path(glob_config.destination_dir or self.config.download.download_directory)
@@ -110,7 +118,8 @@ class ConfigManager:
                         glob_config.base_url,
                         local_base,
                         include_patterns=glob_config.include_patterns,
-                        exclude_patterns=glob_config.exclude_patterns
+                        exclude_patterns=glob_config.exclude_patterns,
+                        resync_within_days=resync_within_days
                     )
                 elif glob_config.recursive:
                     discovered = await discoverer.discover_recursive(

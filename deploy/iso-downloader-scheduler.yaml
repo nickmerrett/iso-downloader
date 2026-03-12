@@ -1,0 +1,45 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: iso-downloader-scheduler
+  labels:
+    app: iso-downloader
+    component: scheduler
+spec:
+  schedule: "0 2 * * *"  # Daily at 2:00 AM
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: iso-downloader
+            component: scheduler
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: iso-downloader
+            image: iso-downloader:latest
+            command: ["python", "main.py", "trigger-download"]
+            env:
+            - name: PYTHONPATH
+              value: "/app"
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            volumeMounts:
+            - name: config
+              mountPath: /app/config.yaml
+              subPath: config.yaml
+            resources:
+              requests:
+                memory: "128Mi"
+                cpu: "100m"
+              limits:
+                memory: "256Mi"
+                cpu: "200m"
+          volumes:
+          - name: config
+            configMap:
+              name: iso-downloader-config

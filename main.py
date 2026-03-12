@@ -70,24 +70,25 @@ def start_worker(ctx):
 
 
 @cli.command()
+@click.option('--resync-within-days', default=None, type=int,
+              help='Override resync_within_days from config. 0 = force resync all existing directories.')
 @click.pass_context
-def trigger_download(ctx):
+def trigger_download(ctx, resync_within_days):
     """Trigger immediate download of all enabled ISOs"""
     config_path = ctx.obj['config_path']
-    
+
     async def _trigger():
         config_manager = ConfigManager(config_path)
         queue_manager = create_queue_manager(config_manager)
-        
+
         queue_manager.connect()
-        await queue_manager.publish_all_enabled_jobs(config_manager)
-        
-        # Get count including resolved ISOs
-        all_isos = await config_manager.resolve_all_isos()
+        await queue_manager.publish_all_enabled_jobs(config_manager, resync_within_days_override=resync_within_days)
+
+        all_isos = await config_manager.resolve_all_isos(resync_within_days_override=resync_within_days)
         click.echo(f"Triggered download for {len(all_isos)} ISOs (including discovered)")
-        
+
         queue_manager.disconnect()
-    
+
     try:
         asyncio.run(_trigger())
     except Exception as e:

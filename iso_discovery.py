@@ -3,7 +3,8 @@ import asyncio
 import aiohttp
 import subprocess
 import logging
-from typing import List, Dict, Set
+from datetime import datetime, timezone
+from typing import List, Dict, Optional, Set
 from urllib.parse import urljoin, urlparse
 from pathlib import Path
 import fnmatch
@@ -104,10 +105,26 @@ class ISODiscoverer:
         
         return unique_links
     
+    def _dir_needs_resync(self, local_dir: Path, resync_within_days: Optional[int]) -> bool:
+        """Return True if local_dir should be re-synced.
+        0  = force resync all existing directories.
+        N  = resync if last synced within N days.
+        None = never resync existing directories.
+        """
+        if resync_within_days is None:
+            return False
+        if resync_within_days == 0:
+            return True
+        mtime = datetime.fromtimestamp(local_dir.stat().st_mtime, tz=timezone.utc)
+        age_days = (datetime.now(tz=timezone.utc) - mtime).days
+        return age_days <= resync_within_days
+
     async def discover_http_directories(self, base_url: str, local_base: "Path",
                                         include_patterns: List[str] = None,
-                                        exclude_patterns: List[str] = None) -> List[Dict[str, str]]:
-        """List subdirectories from an HTTP directory listing and return mirror jobs for those not present locally."""
+                                        exclude_patterns: List[str] = None,
+                                        resync_within_days: Optional[int] = None) -> List[Dict[str, str]]:
+        """List subdirectories from an HTTP directory listing and return mirror jobs for those not present locally,
+        or that haven't been synced within resync_within_days."""
         from pathlib import Path as _Path
         discovered = []
 
@@ -137,8 +154,13 @@ class ISODiscoverer:
 
                 local_dir = _Path(local_base) / name
                 if local_dir.exists():
-                    logger.debug(f"Skipping {name} — already exists locally at {local_dir}")
-                    continue
+                    if self._dir_needs_resync(local_dir, resync_within_days):
+                        mtime = datetime.fromtimestamp(local_dir.stat().st_mtime, tz=timezone.utc)
+                        age_days = (datetime.now(tz=timezone.utc) - mtime).days
+                        logger.info(f"Re-queuing {name} — last synced {age_days}d ago (threshold: {resync_within_days}d)")
+                    else:
+                        logger.debug(f"Skipping {name} — already exists locally at {local_dir}")
+                        continue
 
                 dir_url = base_url.rstrip('/') + '/' + name + '/'
                 discovered.append({
@@ -178,8 +200,10 @@ class ISODiscoverer:
 
     async def discover_rsync_directories(self, base_url: str, local_base: "Path",
                                          include_patterns: List[str] = None,
-                                         exclude_patterns: List[str] = None) -> List[Dict[str, str]]:
-        """List subdirectories on a remote rsync source and return mirror jobs for those not present locally."""
+                                         exclude_patterns: List[str] = None,
+                                         resync_within_days: Optional[int] = None) -> List[Dict[str, str]]:
+        """List subdirectories on a remote rsync source and return mirror jobs for those not present locally,
+        or that haven't been synced within resync_within_days."""
         from pathlib import Path as _Path
         discovered = []
 
@@ -207,8 +231,13 @@ class ISODiscoverer:
 
                 local_dir = _Path(local_base) / name
                 if local_dir.exists():
-                    logger.debug(f"Skipping {name} — already exists locally at {local_dir}")
-                    continue
+                    if self._dir_needs_resync(local_dir, resync_within_days):
+                        mtime = datetime.fromtimestamp(local_dir.stat().st_mtime, tz=timezone.utc)
+                        age_days = (datetime.now(tz=timezone.utc) - mtime).days
+                        logger.info(f"Re-queuing {name} — last synced {age_days}d ago (threshold: {resync_within_days}d)")
+                    else:
+                        logger.debug(f"Skipping {name} — already exists locally at {local_dir}")
+                        continue
 
                 dir_url = base_url.rstrip('/') + '/' + name + '/'
                 discovered.append({

@@ -11,9 +11,13 @@ download:
   chunk_size: 8192
   timeout: 300
 
+worker:
+  concurrency: 2  # Number of parallel download jobs per worker process
+
 scheduler:
   frequency: "weekly"  # weekly, monthly, daily
   time: "02:00"       # 24-hour format
+  resync_within_days: 90  # Re-sync existing directories last synced within this many days (0 = force all, omit to never re-sync)
 
 iso_globs:
   # BSD Systems

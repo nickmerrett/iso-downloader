@@ -65,8 +65,8 @@ class QueueManager:
         
         logger.info(f"Published download job for {iso_config.name}")
     
-    async def publish_all_enabled_jobs(self, config_manager: ConfigManager) -> None:
-        all_isos = await config_manager.resolve_all_isos()
+    async def publish_all_enabled_jobs(self, config_manager: ConfigManager, resync_within_days_override: int = None) -> None:
+        all_isos = await config_manager.resolve_all_isos(resync_within_days_override=resync_within_days_override)
 
         published = 0
         failed = 0
